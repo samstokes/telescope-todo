@@ -1,9 +1,3 @@
-local pickers = require("telescope.pickers")
-local finders = require("telescope.finders")
-local actions = require("telescope.actions")
-local action_state = require("telescope.actions.state")
-local conf = require("telescope.config").values
-
 -- Store the job and cache state
 local M = {
 	_current_job = nil,
@@ -13,32 +7,15 @@ local M = {
 }
 
 local setup = function(opts)
-	require("telescope").load_extension("todo")
-	require("plenary")
-
 	-- Allow configuring cache duration
 	if opts and opts.cache_duration then
 		M._cache_duration = opts.cache_duration
 	end
-end
 
-local todo_picker = function(opts)
-	opts = opts or {}
-	pickers
-		.new(opts, {
-			prompt_title = "TODO",
-			finder = finders.new_oneshot_job({ "todo", "--raw" }),
-			sorter = conf.generic_sorter(opts),
-			attach_mappings = function(prompt_bufnr)
-				actions.select_default:replace(function()
-					actions.close(prompt_bufnr)
-					local selection = action_state.get_selected_entry()
-					print(selection[1])
-				end)
-				return true
-			end,
-		})
-		:find()
+	local ok, telescope = pcall(require, "telescope")
+	if ok then
+		telescope.load_extension("todo")
+	end
 end
 
 local handle_todo_count = function(output)
@@ -81,8 +58,33 @@ local todo_count = function()
 	return handle_todo_count(M._cached_output)
 end
 
+local todo_picker = function(opts)
+	local pickers = require("telescope.pickers")
+	local finders = require("telescope.finders")
+	local actions = require("telescope.actions")
+	local action_state = require("telescope.actions.state")
+	local conf = require("telescope.config").values
+
+	opts = opts or {}
+	pickers
+		.new(opts, {
+			prompt_title = "TODO",
+			finder = finders.new_oneshot_job({ "todo", "--raw" }),
+			sorter = conf.generic_sorter(opts),
+			attach_mappings = function(prompt_bufnr)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					print(selection[1])
+				end)
+				return true
+			end,
+		})
+		:find()
+end
+
 return {
 	setup = setup,
-	todo_picker = todo_picker,
 	todo_count = todo_count,
+	todo_picker = todo_picker,
 }
